@@ -31,11 +31,10 @@ import net.minecraft.client.MinecraftClient;
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import xyz.yourboykyle.secretroutes.Main;
 import xyz.yourboykyle.secretroutes.config.SRMConfig;
 import xyz.yourboykyle.secretroutes.utils.ConfigUtils;
-import xyz.yourboykyle.secretroutes.utils.FileUtils;
 
+import java.io.File;
 import java.util.concurrent.CompletableFuture;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
@@ -76,18 +75,24 @@ public class ChangeColorProfile {
 
     private static int listProfiles(CommandContext<FabricClientCommandSource> context) {
         context.getSource().sendFeedback(Text.literal("Color Profiles:").formatted(Formatting.DARK_AQUA));
-        for (String profile : FileUtils.getFileNames(Main.COLOR_PROFILE_PATH)) {
-            context.getSource().sendFeedback(Text.literal(" - " + profile).formatted(Formatting.AQUA));
+        File[] files = ConfigUtils.COLOR_PROFILE_DIR.listFiles((dir, name) -> name.endsWith(".json"));
+
+        if (files != null) {
+            for (File file : files) {
+                String name = file.getName().replace(".json", "");
+                context.getSource().sendFeedback(Text.literal(" - " + name).formatted(Formatting.AQUA));
+            }
         }
         return 1;
     }
 
     private static int loadDefaultProfile(CommandContext<FabricClientCommandSource> context) {
         if (!loadDefault) {
-            context.getSource().sendError(Text.literal("Incorrect usage: /changecolorprofile load [profile]. Run again to load default"));
+            context.getSource().sendError(Text.literal("Incorrect usage: /changecolorprofile load [profile]. Run again to load default config."));
             loadDefault = true;
         } else {
-            context.getSource().sendFeedback(Text.literal("Loaded default color profile").formatted(Formatting.DARK_GREEN));
+            SRMConfig.HANDLER.load();
+            context.getSource().sendFeedback(Text.literal("Loaded default configuration from disk.").formatted(Formatting.DARK_GREEN));
             loadDefault = false;
         }
         return 1;
@@ -95,15 +100,7 @@ public class ChangeColorProfile {
 
     private static int loadProfile(CommandContext<FabricClientCommandSource> context) {
         String profile = StringArgumentType.getString(context, "profile");
-        if (ConfigUtils.loadColorConfig(profile)) {
-            context.getSource().sendFeedback(
-                    Text.literal("Loaded ").formatted(Formatting.DARK_GREEN)
-                            .append(Text.literal(profile).formatted(Formatting.GREEN))
-                            .append(Text.literal(" as color profile").formatted(Formatting.DARK_GREEN))
-            );
-        } else {
-            context.getSource().sendError(Text.literal("Failed to load color profile: " + profile));
-        }
+        ConfigUtils.loadColorConfig(profile);
         loadDefault = false;
         return 1;
     }
@@ -111,18 +108,16 @@ public class ChangeColorProfile {
     private static int saveProfile(CommandContext<FabricClientCommandSource> context) {
         String profile = StringArgumentType.getString(context, "profile");
         ConfigUtils.writeColorConfig(profile);
-        context.getSource().sendFeedback(
-                Text.literal("Saved color profile: ").formatted(Formatting.DARK_GREEN)
-                        .append(Text.literal(profile).formatted(Formatting.GREEN))
-        );
         return 1;
     }
 
     private static CompletableFuture<Suggestions> suggestProfiles(CommandContext<FabricClientCommandSource> context, SuggestionsBuilder builder) {
-        for (String profile : FileUtils.getFileNames(Main.COLOR_PROFILE_PATH)) {
-            builder.suggest(profile);
+        File[] files = ConfigUtils.COLOR_PROFILE_DIR.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files != null) {
+            for (File file : files) {
+                builder.suggest(file.getName().replace(".json", ""));
+            }
         }
         return builder.buildFuture();
     }
-
 }
