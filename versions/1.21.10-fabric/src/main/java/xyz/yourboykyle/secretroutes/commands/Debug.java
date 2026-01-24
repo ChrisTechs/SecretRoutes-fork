@@ -60,9 +60,9 @@ public class Debug {
                         .executes(ctx -> executeBloodtime(ctx, 3000L))
                         .then(argument("time", LongArgumentType.longArg(0))
                                 .executes(ctx -> executeBloodtime(ctx, LongArgumentType.getLong(ctx, "time")))))
-                .then(literal("cr")
+                /*.then(literal("cr")
                         .executes(Debug::executeCr)
-                        /*.then(literal("f")
+                        .then(literal("f")
                                 .executes(ctx -> executeCrDirection(ctx, true)))
                         .then(literal("b")
                                 .executes(ctx -> executeCrDirection(ctx, false))))*/
@@ -105,13 +105,13 @@ public class Debug {
         return 1;
     }
 
-    private static int executeCr(CommandContext<FabricClientCommandSource> context) {
+    /*private static int executeCr(CommandContext<FabricClientCommandSource> context) {
         context.getSource().sendFeedback(
                 Text.literal("Current index: " + xyz.yourboykyle.secretroutes.Main.currentRoom.closest.getTwo())
                         .formatted(Formatting.AQUA)
         );
         return 1;
-    }
+    }*/
 
     /*private static int executeCrDirection(CommandContext<FabricClientCommandSource> context, boolean forward) {
         try {
