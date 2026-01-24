@@ -43,6 +43,11 @@ public class BlockUtils {
         }
     }
 
+    public static boolean isWithinRange(BlockPos current, BlockPos target, int range) {
+        return Math.abs(current.getX() - target.getX()) <= range &&
+                Math.abs(current.getY() - target.getY()) <= range &&
+                Math.abs(current.getZ() - target.getZ()) <= range;
+    }
 
     public static boolean compareBlocks(BlockPos pos1, BlockPos pos2, int dist) {
         return pos1.getX() >= pos2.getX() - dist && pos1.getX() <= pos2.getX() + dist && pos1.getY() >= pos2.getY() - dist && pos1.getY() <= pos2.getY() + dist && pos1.getZ() >= pos2.getZ() - dist && pos1.getZ() <= pos2.getZ() + dist;
