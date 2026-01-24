@@ -18,7 +18,7 @@
  * with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package xyz.yourboykyle.secretroutes.utils;
+package xyz.yourboykyle.secretroutes.routes.utils;
 
 public class RotationUtils {
     public static float actualToRelativeYaw(float yaw, String direction) {
@@ -27,16 +27,6 @@ public class RotationUtils {
             case "W" -> yaw - 90;
             case "N" -> yaw - 180;
             case "E" -> yaw - 270;
-            default -> yaw;
-        };
-    }
-
-    public static float relativeToActualYaw(float yaw, String direction) {
-        return switch (direction) {
-            case "S" -> yaw;
-            case "W" -> yaw + 90;
-            case "N" -> yaw + 180;
-            case "E" -> yaw + 270;
             default -> yaw;
         };
     }

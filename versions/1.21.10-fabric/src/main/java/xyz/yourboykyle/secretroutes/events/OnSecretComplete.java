@@ -18,34 +18,39 @@
  * with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+
 package xyz.yourboykyle.secretroutes.events;
 
-import xyz.yourboykyle.secretroutes.Main;
+import xyz.yourboykyle.secretroutes.routes.SecretRoutesManager;
 import xyz.yourboykyle.secretroutes.utils.ChatUtils;
 import xyz.yourboykyle.secretroutes.utils.PBUtils;
-import xyz.yourboykyle.secretroutes.utils.RoomDirectionUtils;
 import xyz.yourboykyle.secretroutes.utils.SecretSounds;
 
 public class OnSecretComplete {
     public static void onSecretCompleteNoKeybind() {
-        // This is where you would put your code that you want to run when a secret is completed.
         SecretSounds.secretChime();
+        SecretRoutesManager manager = SecretRoutesManager.get();
 
-        if (Main.currentRoom.currentSecretRoute == null) return;
+        if (!manager.hasRoute()) return;
 
-        // PB Stuff
-        if (Main.currentRoom.currentSecretIndex == 0) {
-            ChatUtils.sendVerboseMessage("Starting timer for " + Main.currentRoom.name, "Personal Bests");
+        int index = manager.getCurrentStepIndex();
+        int total = manager.getTotalSteps();
+        String roomName = manager.getRoomName();
+
+        // PB Logic
+        if (index == 0) {
+            ChatUtils.sendVerboseMessage("Starting timer for " + roomName, "Personal Bests");
             PBUtils.pbIsValid = true;
             PBUtils.startRoute();
-        } else if (Main.currentRoom.currentSecretIndex == Main.currentRoom.currentSecretRoute.size() - 1) {
-            ChatUtils.sendVerboseMessage("Stopping timer for " + Main.currentRoom.name, "Personal Bests");
+        } else if (index == total - 1) {
+            ChatUtils.sendVerboseMessage("Stopping timer for " + roomName, "Personal Bests");
             PBUtils.stopRoute();
         }
 
-        if (Main.currentRoom.currentSecretIndex <= Main.currentRoom.currentSecretRoute.size() - 1) {
-            // If the route hasn't been completed yet, log progress for debugging
-            ChatUtils.sendVerboseMessage("Secret " + (Main.currentRoom.currentSecretIndex + 1) + "/" + (Main.currentRoom.currentSecretRoute.size()) + " in " + RoomDirectionUtils.roomName() + " completed in §a" + ((Main.currentRoom.currentSecretIndex > 0) ? PBUtils.formatTime(System.currentTimeMillis() - PBUtils.startTime) : "0.000s") + " §r(PB is valid: " + (PBUtils.pbIsValid ? "true" : "false") + ")", "Personal Bests");
+        if (index <= total - 1) {
+            ChatUtils.sendVerboseMessage("Secret " + (index + 1) + "/" + total + " in " + roomName +
+                    " completed in §a" + ((index > 0) ? PBUtils.formatTime(System.currentTimeMillis() - PBUtils.startTime) : "0.000s") +
+                    " §r(PB is valid: " + (PBUtils.pbIsValid ? "true" : "false") + ")", "Personal Bests");
         }
     }
 }

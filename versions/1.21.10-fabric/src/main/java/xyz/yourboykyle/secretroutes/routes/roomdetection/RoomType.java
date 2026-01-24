@@ -1,4 +1,4 @@
-package xyz.yourboykyle.secretroutes.utils.dungeon;
+package xyz.yourboykyle.secretroutes.routes.roomdetection;
 
 /*BSD 3-Clause License
 

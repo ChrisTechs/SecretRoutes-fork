@@ -1,7 +1,7 @@
-package xyz.yourboykyle.secretroutes.utils;
+package xyz.yourboykyle.secretroutes.routes.utils;
 
 import net.minecraft.util.math.BlockPos;
-import xyz.yourboykyle.secretroutes.utils.dungeon.DungeonScanner;
+import xyz.yourboykyle.secretroutes.routes.roomdetection.DungeonScanner;
 import java.awt.Point;
 
 public class RoomDirectionUtils {

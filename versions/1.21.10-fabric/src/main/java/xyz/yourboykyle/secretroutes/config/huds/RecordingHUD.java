@@ -5,16 +5,17 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import xyz.yourboykyle.secretroutes.Main;
 import xyz.yourboykyle.secretroutes.config.SRMConfig;
+import xyz.yourboykyle.secretroutes.routes.recording.RouteRecorder;
 
 public class RecordingHUD {
 
     public void render(DrawContext context) {
-        if (Main.routeRecording == null || !Main.routeRecording.recording) {
+        if (!RouteRecorder.get().recording) {
             return;
         }
 
         String prefix = "Recording status: ";
-        String message = Main.routeRecording.recordingMessage;
+        String message = RouteRecorder.get().recordingMessage;
         if (message == null) message = "";
         String fullText = prefix + message;
 

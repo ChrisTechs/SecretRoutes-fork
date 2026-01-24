@@ -1,7 +1,7 @@
-package xyz.yourboykyle.secretroutes.utils.dungeon;
+package xyz.yourboykyle.secretroutes.routes.roomdetection;
 
 import net.minecraft.util.math.BlockPos;
-import java.util.Set;
+import org.joml.Vector2i;
 
 /*BSD 3-Clause License
 
@@ -32,18 +32,12 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
-public class DungeonRoom {
-    public final RoomData data;
-    public final Set<RoomComponent> roomComponents;
-    public Rotations rotation = Rotations.NONE;
-    public BlockPos clayPos = new BlockPos(0, 0, 0);
-
-    public DungeonRoom(RoomData data, Set<RoomComponent> components) {
-        this.data = data;
-        this.roomComponents = components;
+public record RoomComponent(int x, int z, int core) {
+    public Vector2i vec2() {
+        return new Vector2i(x, z);
     }
 
-    public String getName() {
-        return data.name();
+    public BlockPos blockPos() {
+        return new BlockPos(x, 70, z);
     }
 }

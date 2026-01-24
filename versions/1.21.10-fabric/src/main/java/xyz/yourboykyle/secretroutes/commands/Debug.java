@@ -52,8 +52,8 @@ public class Debug {
 
     private static void registerCommands(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
         dispatcher.register(literal("srmdebug")
-                .then(literal("lever")
-                        .executes(Debug::executeLever))
+                /*.then(literal("lever")
+                        .executes(Debug::executeLever))*/
                 .then(literal("pos")
                         .executes(Debug::executePos))
                 .then(literal("bloodtime")
@@ -62,10 +62,10 @@ public class Debug {
                                 .executes(ctx -> executeBloodtime(ctx, LongArgumentType.getLong(ctx, "time")))))
                 .then(literal("cr")
                         .executes(Debug::executeCr)
-                        .then(literal("f")
+                        /*.then(literal("f")
                                 .executes(ctx -> executeCrDirection(ctx, true)))
                         .then(literal("b")
-                                .executes(ctx -> executeCrDirection(ctx, false))))
+                                .executes(ctx -> executeCrDirection(ctx, false))))*/
                 .then(literal("apicall")
                         .executes(Debug::executeApiCall))
                 .then(literal("var")
@@ -76,7 +76,7 @@ public class Debug {
                                         .executes(Debug::executeVarSet)))));
     }
 
-    private static int executeLever(CommandContext<FabricClientCommandSource> context) {
+    /*private static int executeLever(CommandContext<FabricClientCommandSource> context) {
         sendChatMessage("Relative :" + BlockUtils.blockPos(SecretUtils.currentLeverPos));
         BlockPos abs = RoomRotationUtils.relativeToActual(SecretUtils.currentLeverPos, RoomDirectionUtils.roomDirection(), RoomDirectionUtils.roomCorner());
         sendChatMessage("Abs: " + BlockUtils.blockPos(abs));
@@ -84,7 +84,7 @@ public class Debug {
         sendChatMessage("Lever: " + SecretUtils.leverName);
         sendChatMessage("Num: " + SecretUtils.leverNumber);
         return 1;
-    }
+    }*/
 
     private static int executePos(CommandContext<FabricClientCommandSource> context) {
         ClientPlayerEntity player = MinecraftClient.getInstance().player;
@@ -113,7 +113,7 @@ public class Debug {
         return 1;
     }
 
-    private static int executeCrDirection(CommandContext<FabricClientCommandSource> context, boolean forward) {
+    /*private static int executeCrDirection(CommandContext<FabricClientCommandSource> context, boolean forward) {
         try {
             int currentIndex = xyz.yourboykyle.secretroutes.Main.currentRoom.closest.getTwo();
             int newIndex = forward ? currentIndex + 1 : currentIndex - 1;
@@ -132,7 +132,7 @@ public class Debug {
             LogUtils.error(e);
         }
         return 1;
-    }
+    }*/
 
     private static int executeApiCall(CommandContext<FabricClientCommandSource> context) {
         try {

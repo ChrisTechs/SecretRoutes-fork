@@ -1,6 +1,7 @@
-package xyz.yourboykyle.secretroutes.utils.dungeon;
+package xyz.yourboykyle.secretroutes.routes.roomdetection;
 
-import java.util.List;
+import net.minecraft.util.math.BlockPos;
+import java.util.Set;
 
 /*BSD 3-Clause License
 
@@ -31,11 +32,18 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
-public record RoomData(
-        String name,
-        RoomType type,
-        List<Integer> cores,
-        int crypts,
-        int secrets,
-        int trappedChests
-) {}
+public class DungeonRoom {
+    public final RoomData data;
+    public final Set<RoomComponent> roomComponents;
+    public Rotations rotation = Rotations.NONE;
+    public BlockPos clayPos = new BlockPos(0, 0, 0);
+
+    public DungeonRoom(RoomData data, Set<RoomComponent> components) {
+        this.data = data;
+        this.roomComponents = components;
+    }
+
+    public String getName() {
+        return data.name();
+    }
+}

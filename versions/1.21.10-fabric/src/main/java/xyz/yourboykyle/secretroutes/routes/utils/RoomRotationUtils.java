@@ -1,4 +1,4 @@
-package xyz.yourboykyle.secretroutes.utils;
+package xyz.yourboykyle.secretroutes.routes.utils;
 
 import net.minecraft.util.math.BlockPos;
 import xyz.yourboykyle.secretroutes.utils.multistorage.Triple;

@@ -1,4 +1,4 @@
-The following license applies to rooms.json in assets/secretroutesmod/ and all code in xyz.yourboykyle.secretroutes.utils.dungeon:
+The following license applies to rooms.json in assets/secretroutesmod/ and all code in xyz.yourboykyle.secretroutes.routes.roomdetection:
 DungeonRoom.java, DungeonScanner.java, RoomComponent.java, RoomData.java, RoomType.java, Rotations.java
 which is originally created by odtheking.
 

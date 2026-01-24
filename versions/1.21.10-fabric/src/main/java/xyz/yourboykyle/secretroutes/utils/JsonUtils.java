@@ -20,12 +20,53 @@
 
 package xyz.yourboykyle.secretroutes.utils;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Vec3d;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class JsonUtils {
     public static JsonObject toJsonObject(String string) {
         JsonParser parser = new JsonParser();
         return parser.parse(string).getAsJsonObject();
+    }
+
+    public static List<List<Float>> toFloatListList(JsonArray arr) {
+        if (arr == null) return Collections.emptyList();
+        List<List<Float>> list = new ArrayList<>();
+        for (JsonElement el : arr) {
+            JsonArray p = el.getAsJsonArray();
+            List<Float> angles = new ArrayList<>();
+            angles.add(p.get(0).getAsFloat());
+            angles.add(p.get(1).getAsFloat());
+            list.add(angles);
+        }
+        return list;
+    }
+
+    public static List<Vec3d> toVec3dList(JsonArray arr) {
+        if (arr == null) return Collections.emptyList();
+        List<Vec3d> list = new ArrayList<>();
+        for (JsonElement el : arr) {
+            JsonArray p = el.getAsJsonArray();
+            list.add(new Vec3d(p.get(0).getAsDouble(), p.get(1).getAsDouble(), p.get(2).getAsDouble()));
+        }
+        return list;
+    }
+
+    public static List<BlockPos> toPosList(JsonArray arr) {
+        if (arr == null) return Collections.emptyList();
+        List<BlockPos> list = new ArrayList<>();
+        for (JsonElement el : arr) {
+            JsonArray p = el.getAsJsonArray();
+            list.add(new BlockPos(p.get(0).getAsInt(), p.get(1).getAsInt(), p.get(2).getAsInt()));
+        }
+        return list;
     }
 }

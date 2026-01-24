@@ -31,11 +31,11 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import xyz.yourboykyle.secretroutes.Main;
 import xyz.yourboykyle.secretroutes.config.SRMConfig;
+import xyz.yourboykyle.secretroutes.routes.utils.RoomDirectionUtils;
+import xyz.yourboykyle.secretroutes.routes.data.SecretCategory;
+import xyz.yourboykyle.secretroutes.routes.recording.RouteRecorder;
 import xyz.yourboykyle.secretroutes.utils.LogUtils;
-import xyz.yourboykyle.secretroutes.utils.Room;
-import xyz.yourboykyle.secretroutes.utils.RoomDirectionUtils;
 
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
@@ -48,18 +48,13 @@ public class Recording {
     private static void registerCommands(CommandDispatcher<FabricClientCommandSource> dispatcher, CommandRegistryAccess registryAccess) {
         dispatcher.register(literal("recording")
                 .executes(Recording::openGui)
-                .then(literal("start")
-                        .executes(Recording::executeStart))
-                .then(literal("stop")
-                        .executes(Recording::executeStop))
-                .then(literal("export")
-                        .executes(Recording::executeExport))
-                .then(literal("getroom")
-                        .executes(Recording::executeGetRoom))
-                .then(literal("setbat")
-                        .executes(Recording::executeSetBat))
-                .then(literal("setexit")
-                        .executes(Recording::executeSetExit))
+                .then(literal("start").executes(Recording::executeStart))
+                .then(literal("stop").executes(Recording::executeStop))
+                .then(literal("export").executes(Recording::executeExport))
+                .then(literal("getroom").executes(Recording::executeGetRoom))
+                .then(literal("setbat").executes(Recording::executeSetBat))
+                .then(literal("setitem").executes(Recording::executeSetItem))
+                .then(literal("setexit").executes(Recording::executeSetExit))
                 .then(literal("import")
                         .then(argument("filename", StringArgumentType.greedyString())
                                 .executes(Recording::executeImport))));
@@ -72,17 +67,17 @@ public class Recording {
     }
 
     private static int executeStart(CommandContext<FabricClientCommandSource> context) {
-        Main.routeRecording.startRecording();
+        RouteRecorder.get().startRecording();
         return 1;
     }
 
     private static int executeStop(CommandContext<FabricClientCommandSource> context) {
-        Main.routeRecording.stopRecording();
+        RouteRecorder.get().stopRecording();
         return 1;
     }
 
     private static int executeExport(CommandContext<FabricClientCommandSource> context) {
-        Main.routeRecording.exportAllRoutes();
+        RouteRecorder.get().exportAllRoutes();
         return 1;
     }
 
@@ -97,20 +92,31 @@ public class Recording {
     }
 
     private static int executeSetBat(CommandContext<FabricClientCommandSource> context) {
-        if (Main.routeRecording.recording) {
+        if (RouteRecorder.get().recording) {
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            if (player == null) {
-                context.getSource().sendError(Text.literal("Player not found"));
-                return 0;
-            }
+            if (player == null) return 0;
 
-            BlockPos playerPos = player.getBlockPos();
-            BlockPos targetPos = new BlockPos(playerPos.getX(), playerPos.getY(), playerPos.getZ());
-            targetPos = targetPos.add(-1, 2, -1); // Block above the player, the -1 on X and Z have to be like that, trust the process
+            BlockPos targetPos = player.getBlockPos().add(-1, 2, -1);
 
-            Main.routeRecording.addWaypoint(Room.SECRET_TYPES.BAT, targetPos);
-            Main.routeRecording.newSecret();
-            Main.routeRecording.setRecordingMessage("Added bat secret waypoint.");
+            RouteRecorder.get().addSecret(SecretCategory.BAT, targetPos);
+            RouteRecorder.get().newSecret();
+            RouteRecorder.get().setRecordingMessage("Added bat secret waypoint.");
+        } else {
+            context.getSource().sendError(Text.literal("Route recording is not enabled. Run /recording start"));
+        }
+        return 1;
+    }
+
+    private static int executeSetItem(CommandContext<FabricClientCommandSource> context) {
+        if (RouteRecorder.get().recording) {
+            ClientPlayerEntity player = MinecraftClient.getInstance().player;
+            if (player == null) return 0;
+
+            BlockPos targetPos = player.getBlockPos();
+
+            RouteRecorder.get().addSecret(SecretCategory.ITEM, targetPos);
+            RouteRecorder.get().newSecret();
+            RouteRecorder.get().setRecordingMessage("Added item secret waypoint.");
         } else {
             context.getSource().sendError(Text.literal("Route recording is not enabled. Run /recording start"));
         }
@@ -118,21 +124,16 @@ public class Recording {
     }
 
     private static int executeSetExit(CommandContext<FabricClientCommandSource> context) {
-        if (Main.routeRecording.recording) {
+        if (RouteRecorder.get().recording) {
             ClientPlayerEntity player = MinecraftClient.getInstance().player;
-            if (player == null) {
-                context.getSource().sendError(Text.literal("Player not found"));
-                return 0;
-            }
+            if (player == null) return 0;
 
-            BlockPos playerPos = player.getBlockPos();
-            BlockPos targetPos = new BlockPos(playerPos.getX(), playerPos.getY(), playerPos.getZ());
-            targetPos = targetPos.add(-1, 0, -1);
+            BlockPos targetPos = player.getBlockPos().add(-1, 0, -1);
 
-            Main.routeRecording.addWaypoint(Room.SECRET_TYPES.EXITROUTE, targetPos);
-            Main.routeRecording.newSecret();
-            Main.routeRecording.stopRecording(); // Exiting the route, it should be stopped
-            Main.routeRecording.setRecordingMessage("Added route exit waypoint & stopped recording.");
+            // TODO : Exit route type add
+
+            RouteRecorder.get().stopRecording();
+            RouteRecorder.get().setRecordingMessage("Added route exit waypoint & stopped recording.");
             LogUtils.info("Added route exit waypoint & stopped recording.");
         } else {
             context.getSource().sendError(Text.literal("Route recording is not enabled. Run /recording start"));
@@ -142,7 +143,7 @@ public class Recording {
 
     private static int executeImport(CommandContext<FabricClientCommandSource> context) {
         String filename = StringArgumentType.getString(context, "filename");
-        Main.routeRecording.importRoutes(filename);
+        RouteRecorder.get().importRoutes(filename);
         context.getSource().sendFeedback(
                 Text.literal("Imported routes from ").formatted(Formatting.DARK_GREEN)
                         .append(Text.literal(filename).formatted(Formatting.GREEN))

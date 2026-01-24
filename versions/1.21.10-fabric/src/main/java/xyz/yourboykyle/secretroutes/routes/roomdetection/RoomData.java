@@ -1,7 +1,6 @@
-package xyz.yourboykyle.secretroutes.utils.dungeon;
+package xyz.yourboykyle.secretroutes.routes.roomdetection;
 
-import net.minecraft.util.math.BlockPos;
-import org.joml.Vector2i;
+import java.util.List;
 
 /*BSD 3-Clause License
 
@@ -32,12 +31,11 @@ CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
 OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.*/
 
-public record RoomComponent(int x, int z, int core) {
-    public Vector2i vec2() {
-        return new Vector2i(x, z);
-    }
-
-    public BlockPos blockPos() {
-        return new BlockPos(x, 70, z);
-    }
-}
+public record RoomData(
+        String name,
+        RoomType type,
+        List<Integer> cores,
+        int crypts,
+        int secrets,
+        int trappedChests
+) {}

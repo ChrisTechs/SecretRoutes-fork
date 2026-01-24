@@ -1,4 +1,4 @@
-package xyz.yourboykyle.secretroutes.utils.dungeon;
+package xyz.yourboykyle.secretroutes.routes.roomdetection;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -12,12 +12,11 @@ import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import org.joml.Vector2i;
 import xyz.yourboykyle.secretroutes.Main;
-import xyz.yourboykyle.secretroutes.events.OnEnterNewRoom;
+import xyz.yourboykyle.secretroutes.routes.SecretRoutesManager;
 import xyz.yourboykyle.secretroutes.utils.LocationUtils;
-import xyz.yourboykyle.secretroutes.utils.Room;
+import xyz.yourboykyle.secretroutes.utils.LogUtils;
 
-import java.io.InputStreamReader;
-import java.io.Reader;
+import java.io.*;
 import java.util.*;
 
 /*BSD 3-Clause License
@@ -75,7 +74,7 @@ public class DungeonScanner {
             if (!LocationUtils.isInDungeons()) {
                 if (currentRoom != null) {
                     currentRoom = null;
-                    Main.currentRoom = new Room(null);
+                    SecretRoutesManager.get().reset();
                 }
                 return;
             }
@@ -85,17 +84,28 @@ public class DungeonScanner {
 
     private static void loadResources() {
         CORE_TO_ROOM_MAP.clear();
-        client.getResourceManager().findResources("rooms.json", id -> id.getPath().endsWith("rooms.json"))
-                .forEach((id, resource) -> {
-                    try (Reader reader = new InputStreamReader(resource.getInputStream())) {
-                        List<RoomData> data = GSON.fromJson(reader, new TypeToken<List<RoomData>>(){}.getType());
-                        for (RoomData room : data) {
-                            if (room.cores() != null) {
-                                for (Integer core : room.cores()) CORE_TO_ROOM_MAP.put(core, room);
-                            }
+
+        String path = "/assets/" + Main.MODID + "/rooms.json";
+
+        try (InputStream stream = DungeonScanner.class.getResourceAsStream(path)) {
+            if (stream == null) {
+                LogUtils.error(new FileNotFoundException("Internal rooms.json not found at: " + path));
+                return;
+            }
+
+            try (Reader reader = new InputStreamReader(stream)) {
+                List<RoomData> data = GSON.fromJson(reader, new TypeToken<List<RoomData>>() {}.getType());
+                if (data != null) {
+                    for (RoomData room : data) {
+                        if (room.cores() != null) {
+                            for (Integer core : room.cores()) CORE_TO_ROOM_MAP.put(core, room);
                         }
-                    } catch (Exception e) { e.printStackTrace(); }
-                });
+                    }
+                }
+            }
+        } catch (Exception e) {
+            LogUtils.error(new IOException("Failed to load rooms.json", e));
+        }
     }
 
     private static void tick() {
@@ -131,9 +141,7 @@ public class DungeonScanner {
 
         System.out.println("[SecretRoutes] Entered Dungeon Room: " + room.data.name() + " (" + room.rotation + ")");
 
-        xyz.yourboykyle.secretroutes.utils.Room newRoomObj = new xyz.yourboykyle.secretroutes.utils.Room(room.data.name());
-        Main.currentRoom = newRoomObj;
-        OnEnterNewRoom.onEnterNewRoom(newRoomObj);
+        SecretRoutesManager.get().onRoomChange(room.data.name());
     }
 
     private static boolean hasComponent(DungeonRoom room, Vector2i target) {
@@ -300,6 +308,6 @@ public class DungeonScanner {
         lastRoomCentre = new Vector2i(0, 0);
         currentRoom = null;
         passedRooms.clear();
-        Main.currentRoom = null;
+        SecretRoutesManager.get().reset();
     }
 }

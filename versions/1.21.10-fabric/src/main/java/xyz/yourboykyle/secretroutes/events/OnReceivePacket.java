@@ -6,16 +6,16 @@ import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ItemEntity;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
 import net.minecraft.network.packet.s2c.play.ItemPickupAnimationS2CPacket;
-import net.minecraft.registry.Registries;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
 import xyz.yourboykyle.secretroutes.Main;
+import xyz.yourboykyle.secretroutes.events.recording.RecordBlockBreak;
+import xyz.yourboykyle.secretroutes.events.recording.RecordBlockPlace;
+import xyz.yourboykyle.secretroutes.routes.recording.RouteRecorder;
 import xyz.yourboykyle.secretroutes.utils.ChatUtils;
 import xyz.yourboykyle.secretroutes.utils.LogUtils;
-import xyz.yourboykyle.secretroutes.utils.Room;
 
 public class OnReceivePacket {
     public static boolean firstBlockBreakPacket = true;
@@ -55,13 +55,13 @@ public class OnReceivePacket {
 
             if (block == Blocks.AIR) {
                 // Block was broken
-                if (Main.routeRecording.recording && firstBlockBreakPacket) {
-                    OnBlockBreak.handleBlockBreak(world, pos, blockState, client.player);
+                if (RouteRecorder.get().recording && firstBlockBreakPacket) {
+                    RecordBlockBreak.handleBlockBreak(world, pos, blockState, client.player);
                 }
             } else {
                 // Block was placed
-                if (Main.routeRecording.recording && firstBlockPlacePacket) {
-                    handleBlockPlace(pos, blockState);
+                if (RouteRecorder.get().recording && firstBlockPlacePacket) {
+                    RecordBlockPlace.onBlockPlace(pos, blockState);
                 }
             }
 
@@ -70,17 +70,6 @@ public class OnReceivePacket {
         } catch (Exception error) {
             LogUtils.error(error);
             ChatUtils.sendChatMessage("There was an error with the " + Main.MODID + " mod.");
-        }
-    }
-
-    public static void handleBlockPlace(BlockPos pos, BlockState blockState) {
-        if (blockState.getBlock() == Blocks.TNT && Main.routeRecording.recording) {
-            String blockName = Registries.BLOCK.getId(blockState.getBlock()).toString();
-            ChatUtils.sendVerboseMessage("§d Block placed: " + blockName, "Recording");
-            ChatUtils.sendVerboseMessage("§d TNT placed at: " + pos, "Recording");
-
-            Main.routeRecording.addWaypoint(Room.WAYPOINT_TYPES.TNTS, pos);
-            Main.routeRecording.setRecordingMessage("Added TNT waypoint.");
         }
     }
 }

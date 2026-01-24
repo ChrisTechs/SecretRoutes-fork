@@ -25,6 +25,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import net.minecraft.util.Formatting;
 import xyz.yourboykyle.secretroutes.config.SRMConfig;
+import xyz.yourboykyle.secretroutes.routes.utils.RoomDirectionUtils;
 
 import java.io.*;
 import java.util.regex.Matcher;

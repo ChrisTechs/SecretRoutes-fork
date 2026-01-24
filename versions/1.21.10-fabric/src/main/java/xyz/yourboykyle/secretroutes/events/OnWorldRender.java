@@ -20,65 +20,18 @@
 
 package xyz.yourboykyle.secretroutes.events;
 
-import com.google.gson.JsonArray;
-import xyz.yourboykyle.secretroutes.Main;
 import xyz.yourboykyle.secretroutes.config.SRMConfig;
+import xyz.yourboykyle.secretroutes.rendering.SecretRenderer;
+import xyz.yourboykyle.secretroutes.routes.SecretRoutesManager;
 import xyz.yourboykyle.secretroutes.utils.LocationUtils;
-import xyz.yourboykyle.secretroutes.utils.LogUtils;
-import xyz.yourboykyle.secretroutes.utils.SecretUtils;
 
 public class OnWorldRender {
-    private final static String verboseTAG = "Rendering";
-    public static boolean playCompleteFirst = true;
 
     public static void onRenderWorld() {
-        try {
-            if (!LocationUtils.isInDungeons() || !SRMConfig.get().modEnabled || Main.currentRoom == null) {
-                return;
-            }
+        if (!LocationUtils.isInDungeons() || !SRMConfig.get().modEnabled) return;
 
-            if (OnChatReceive.isAllFound()) {
-                /*
-                if(playCompleteFirst){
-                    playCompleteFirst = false;
-                    new Thread( ()->{
-                        for(int i = 0; i<10; i++){
-                            SecretSounds.playLoudSound("note.pling", 1.0f, 1.0f, Minecraft.getMinecraft().thePlayer.getPositionVector());
-                            try{
-                                Thread.sleep(200);
-                            }catch (InterruptedException ignored){
+        if (SecretRoutesManager.get().getRoomName() == null) return;
 
-                            }
-                        }
-                    }).start();
-                }
-
-                 */
-                if (!SRMConfig.get().renderComplete) {
-                    return;
-                }
-            } else {
-                playCompleteFirst = true;
-            }
-
-            if (SRMConfig.get().allSecrets) {
-                SecretUtils.renderSecrets();
-            } else if (SRMConfig.get().wholeRoute) {
-                JsonArray csr = Main.currentRoom.currentSecretRoute;
-                if (csr != null) {
-                    for (int i = Main.currentRoom.currentSecretIndex; i < csr.size(); i++) {
-                        SecretUtils.renderingCallback(csr.get(i).getAsJsonObject(), i);
-                    }
-                }
-            } else {
-                SecretUtils.renderingCallback(Main.currentRoom.currentSecretWaypoints, Main.currentRoom.currentSecretIndex);
-            }
-            if (SecretUtils.renderLever) {
-                SecretUtils.renderLever();
-            }
-        } catch (Exception e) {
-            LogUtils.error(e);
-        }
+        SecretRenderer.renderWorld();
     }
-
 }

@@ -20,35 +20,36 @@
 
 package xyz.yourboykyle.secretroutes.events;
 
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.math.BlockPos;
-import xyz.yourboykyle.secretroutes.Main;
 import xyz.yourboykyle.secretroutes.config.SRMConfig;
+import xyz.yourboykyle.secretroutes.events.recording.RecordItemPickup;
+import xyz.yourboykyle.secretroutes.routes.utils.RoomDirectionUtils;
+import xyz.yourboykyle.secretroutes.routes.utils.RoomRotationUtils;
+import xyz.yourboykyle.secretroutes.routes.SecretRoutesManager;
+import xyz.yourboykyle.secretroutes.routes.data.RouteStep;
+import xyz.yourboykyle.secretroutes.routes.data.Secret;
+import xyz.yourboykyle.secretroutes.routes.data.SecretCategory;
+import xyz.yourboykyle.secretroutes.routes.recording.RouteRecorder;
 import xyz.yourboykyle.secretroutes.utils.*;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class OnItemPickedUp {
-    public static final String[] validItems = {
-            "Decoy",
-            "Defuse Kit",
-            "Dungeon Chest Key",
-            "Healing VIII",
-            "Inflatable Jerry",
-            "Spirit Leap",
-            "Training Weights",
-            "Trap",
-            "Treasure Talisman"
-    };
+
+    public static final Set<String> VALID_ITEMS = Set.of(
+            "Decoy", "Defuse Kit", "Dungeon Chest Key", "Healing VIII",
+            "Inflatable Jerry", "Spirit Leap", "Training Weights",
+            "Trap", "Treasure Talisman"
+    );
+
     private static final Map<String, Integer> previousInventory = new HashMap<>();
-    public static boolean itemSecretOnCooldown = false;
+    private static final Map<String, Integer> currentInventory = new HashMap<>();
     private static int tickCounter = 0;
 
     public static void register() {
@@ -58,98 +59,69 @@ public class OnItemPickedUp {
     private static void onClientTick(MinecraftClient client) {
         ClientPlayerEntity player = client.player;
         if (player == null) return;
-
-        // Only check every 5 ticks to reduce overhead
         if (++tickCounter % 5 != 0) return;
-
         if (!LocationUtils.isInDungeons()) return;
 
-        // Track inventory changes to detect item pickups
-        Map<String, Integer> currentInventory = new HashMap<>();
+        scanInventory(player);
+    }
+
+    private static void scanInventory(ClientPlayerEntity player) {
+        currentInventory.clear();
         for (int i = 0; i < player.getInventory().size(); i++) {
             ItemStack stack = player.getInventory().getStack(i);
             if (stack != null && !stack.isEmpty()) {
                 String itemName = stack.getName().getString();
+                if (!VALID_ITEMS.contains(itemName)) continue;
                 currentInventory.put(itemName, currentInventory.getOrDefault(itemName, 0) + stack.getCount());
             }
         }
 
-        // Check for newly added items
         for (Map.Entry<String, Integer> entry : currentInventory.entrySet()) {
-            String itemName = entry.getKey();
-            int currentCount = entry.getValue();
-            int previousCount = previousInventory.getOrDefault(itemName, 0);
-
-            if (currentCount > previousCount && isSecretItem(itemName)) {
-                handleItemPickup(player, itemName);
+            if (entry.getValue() > previousInventory.getOrDefault(entry.getKey(), 0) && isSecretItem(entry.getKey())) {
+                handleItemPickup(player, entry.getKey());
             }
         }
-
         previousInventory.clear();
         previousInventory.putAll(currentInventory);
     }
 
-    // Overload for packet-based item pickup detection
     public static void handleItemPickup(ClientPlayerEntity player, ItemEntity itemEntity) {
         ItemStack stack = itemEntity.getStack();
         if (stack == null || stack.isEmpty()) return;
-
-        String itemName = stack.getName().getString();
-        handleItemPickup(player, itemName);
+        handleItemPickup(player, stack.getName().getString());
     }
 
     private static void handleItemPickup(ClientPlayerEntity player, String itemName) {
-        BlockPos pos = player.getBlockPos();
+        SecretRoutesManager manager = SecretRoutesManager.get();
+        if (manager.getRoomName() == null) return;
 
+        BlockPos playerPos = player.getBlockPos();
+        BlockPos playerRelPos = RoomRotationUtils.actualToRelative(playerPos, RoomDirectionUtils.roomDirection(), RoomDirectionUtils.roomCorner());
+
+        // Mark secrets as found based on proximity
         if (SRMConfig.get().allSecrets) {
-            if (SecretUtils.secrets == null) return;
-            for (JsonElement obj : SecretUtils.secrets) {
-                try {
-                    JsonObject secret = obj.getAsJsonObject();
-                    if (!secret.get("category").getAsString().equals("category")) return;
-                    int x = secret.get("x").getAsInt();
-                    int y = secret.get("y").getAsInt();
-                    int z = secret.get("z").getAsInt();
-                    if (pos.getX() >= x - 10 && pos.getX() <= x + 10 &&
-                            pos.getY() >= y - 10 && pos.getY() <= y + 10 &&
-                            pos.getZ() >= z - 10 && pos.getZ() <= z + 10) {
-                        if (!SecretUtils.secretLocations.contains(BlockUtils.blockPos(new BlockPos(x, y, z)))) {
-                            SecretUtils.secretLocations.add(BlockUtils.blockPos(new BlockPos(x, y, z)));
-                        }
-                    }
-                } catch (Exception ignored) {
+            for (Secret secret : manager.getAllSecrets()) {
+                if (BlockUtils.isWithinRange(playerRelPos, secret.pos(), 5)) {
+                    manager.markSecretFound(secret.pos());
                 }
             }
         }
 
-        if (Main.currentRoom != null && Main.currentRoom.getSecretType() == Room.SECRET_TYPES.ITEM) {
-            BlockPos itemPos = Main.currentRoom.getSecretLocation();
-
-            if (pos.getX() >= itemPos.getX() - 10 && pos.getX() <= itemPos.getX() + 10 &&
-                    pos.getY() >= itemPos.getY() - 10 && pos.getY() <= itemPos.getY() + 10 &&
-                    pos.getZ() >= itemPos.getZ() - 10 && pos.getZ() <= itemPos.getZ() + 10) {
-                Main.currentRoom.nextSecret();
+        // Auto next
+        RouteStep step = manager.getCurrentStep();
+        if (step != null && step.targetSecret() != null && step.targetSecret().is(SecretCategory.ITEM)) {
+            if (BlockUtils.isWithinRange(playerRelPos, step.targetSecret().pos(), 10)) {
+                manager.nextSecret();
                 SecretSounds.secretChime();
-                LogUtils.info("Picked up item at " + itemPos);
+                LogUtils.info("Picked up item at " + step.targetSecret().pos());
             }
         }
 
-        // Route Recording
-        if (Main.routeRecording.recording) {
-            if (!itemSecretOnCooldown && isSecretItem(itemName)) {
-                Main.routeRecording.addWaypoint(Room.SECRET_TYPES.ITEM, pos);
-                Main.routeRecording.newSecret();
-                Main.routeRecording.setRecordingMessage("Added item secret waypoint.");
-            }
-        }
+        if (RouteRecorder.get().recording && isSecretItem(itemName))
+            RecordItemPickup.onItemPickup(playerPos);
     }
 
-    public static boolean isSecretItem(String itemName) {
-        for (String item : validItems) {
-            if (itemName.contains(item)) {
-                return true;
-            }
-        }
-        return false;
+    private static boolean isSecretItem(String itemName) {
+        return VALID_ITEMS.contains(Formatting.strip(itemName).trim());
     }
 }
