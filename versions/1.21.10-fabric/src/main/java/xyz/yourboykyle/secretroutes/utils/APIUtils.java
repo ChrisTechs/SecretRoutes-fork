@@ -71,17 +71,17 @@ public class APIUtils {
                         }
                     }
                 } catch (Exception e) {
-                    ChatUtils.sendChatMessage("§cSomething went wrong adding user to DB.");
+                    //ChatUtils.sendChatMessage("§cSomething went wrong adding user to DB.");
                     LogUtils.errorNoShout(e);
                 }
 
             } catch (Exception e) {
-                ChatUtils.sendChatMessage("§cSomething went wrong adding user to DB.");
+                //ChatUtils.sendChatMessage("§cSomething went wrong adding user to DB.");
                 LogUtils.errorNoShout(e);
             }
 
         } catch (Exception e) {
-            ChatUtils.sendChatMessage("§cSomething went wrong adding user to DB.");
+            //ChatUtils.sendChatMessage("§cSomething went wrong adding user to DB.");
             LogUtils.errorNoShout(e);
         }
 
