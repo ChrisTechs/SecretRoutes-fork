@@ -95,6 +95,8 @@ dependencies {
         modImplementation("net.hypixel:mod-api:1.0.1")
 
         modImplementation("com.terraformersmc:modmenu:16.0.0-rc.2")
+
+        modImplementation("maven.modrinth:iris:1.9.1+1.21.7-fabric")
     } else if (mcData.isFabric && project.name == "1.21.11-fabric") {
         modImplementation("net.fabricmc.fabric-api:fabric-api:0.141.3+1.21.11")
 
