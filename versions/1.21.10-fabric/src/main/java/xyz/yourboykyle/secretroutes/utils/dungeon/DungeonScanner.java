@@ -16,6 +16,7 @@ import xyz.yourboykyle.secretroutes.Main;
 import xyz.yourboykyle.secretroutes.events.OnEnterNewRoom;
 import xyz.yourboykyle.secretroutes.utils.LocationUtils;
 import xyz.yourboykyle.secretroutes.utils.Room;
+import xyz.yourboykyle.secretroutes.utils.LogUtils;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
