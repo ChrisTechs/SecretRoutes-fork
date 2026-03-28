@@ -57,6 +57,14 @@ public class DungeonScanner {
 
     private static final Map<Integer, RoomData> CORE_TO_ROOM_MAP = new HashMap<>();
 
+    public static class SignatureColumn {
+        public int x;
+        public int z;
+        public long mask;
+    }
+   
+    private static Map<String, List<SignatureColumn>> SIGNATURE_DATA = new HashMap<>();
+
     public static DungeonRoom currentRoom = null;
     public static final Set<DungeonRoom> passedRooms = new HashSet<>();
     private static Vector2i lastRoomCentre = new Vector2i(0, 0);
@@ -86,17 +94,43 @@ public class DungeonScanner {
 
     private static void loadResources() {
         CORE_TO_ROOM_MAP.clear();
-        client.getResourceManager().findResources("rooms.json", id -> id.getPath().endsWith("rooms.json"))
-                .forEach((id, resource) -> {
-                    try (Reader reader = new InputStreamReader(resource.getInputStream())) {
-                        List<RoomData> data = GSON.fromJson(reader, new TypeToken<List<RoomData>>(){}.getType());
+        SIGNATURE_DATA.clear();
+
+        // load rooms.json
+        try {
+            Optional<Resource> res = client.getResourceManager().getResource(Identifier.of(Main.MODID, "rooms.json"));
+            if (res.isPresent()) {
+                try (Reader reader = new InputStreamReader(res.get().getInputStream())) {
+                    List<RoomData> data = GSON.fromJson(reader, new TypeToken<List<RoomData>>() {}.getType());
+                    if (data != null) {
                         for (RoomData room : data) {
                             if (room.cores() != null) {
                                 for (Integer core : room.cores()) CORE_TO_ROOM_MAP.put(core, room);
                             }
                         }
-                    } catch (Exception e) { e.printStackTrace(); }
-                });
+                    }
+                }
+            } else {
+                LogUtils.error(new FileNotFoundException("rooms.json not found in resources."));
+            }
+        } catch (Exception e) {
+            LogUtils.error(new IOException("Failed to load rooms.json", e));
+        }
+
+        // Load DRM skeleton files room signatures
+        try {
+            Optional<Resource> res = client.getResourceManager().getResource(Identifier.of(Main.MODID, "room_signatures.json"));
+            if (res.isPresent()) {
+                try (Reader reader = new InputStreamReader(res.get().getInputStream())) {
+                    Type type = new TypeToken<Map<String, List<SignatureColumn>>>() {}.getType();
+                    SIGNATURE_DATA = GSON.fromJson(reader, type);
+                }
+            } else {
+                LogUtils.error(new FileNotFoundException("room_signatures.json not found in resources."));
+            }
+        } catch (Exception e) {
+            LogUtils.error(new IOException("Failed to load room_signatures.json", e));
+        }
     }
 
     private static void tick() {
@@ -132,7 +166,7 @@ public class DungeonScanner {
 
         System.out.println("[SecretRoutes] Entered Dungeon Room: " + room.data.name() + " (" + room.rotation + ")");
 
-        xyz.yourboykyle.secretroutes.utils.Room newRoomObj = new xyz.yourboykyle.secretroutes.utils.Room(room.data.name());
+        Room newRoomObj = new Room(room.data.name());
         Main.currentRoom = newRoomObj;
         OnEnterNewRoom.onEnterNewRoom(newRoomObj);
     }
@@ -180,42 +214,73 @@ public class DungeonScanner {
             }
             return;
         }
-        List<Rotations> rotations = Arrays.asList(Rotations.NORTH, Rotations.SOUTH, Rotations.WEST, Rotations.EAST);
-        for (Rotations rot : rotations) {
-            for (RoomComponent comp : room.roomComponents) {
-                BlockPos checkPos = new BlockPos(comp.x() + rot.x, roomHeight, comp.z() + rot.z);
-                if (isBlueTerracotta(checkPos)) {
-                    boolean neighborsValid = true;
-                    if (room.roomComponents.size() > 1) {
-                        for (Direction facing : HORIZONTALS) {
-                            BlockPos neighbor = checkPos.offset(facing);
-                            if (!isBlueTerracottaOrAir(neighbor)) { neighborsValid = false; break; }
+
+        // Match DRM skeleton file signatures to the current room.
+        List<SignatureColumn> signature = SIGNATURE_DATA.get(room.data.name().toLowerCase(Locale.ROOT));
+        if (client.world != null) {
+
+            int minCenterX = room.roomComponents.stream().mapToInt(RoomComponent::x).min().orElse(0);
+            int maxCenterX = room.roomComponents.stream().mapToInt(RoomComponent::x).max().orElse(0);
+            int minCenterZ = room.roomComponents.stream().mapToInt(RoomComponent::z).min().orElse(0);
+            int maxCenterZ = room.roomComponents.stream().mapToInt(RoomComponent::z).max().orElse(0);
+
+            int minX = minCenterX - 15;
+            int maxX = maxCenterX + 15;
+            int minZ = minCenterZ - 15;
+            int maxZ = maxCenterZ + 15;
+
+            Rotations bestRot = Rotations.NONE;
+            int maxBitsMatched = -1;
+
+            for (Rotations rot : Arrays.asList(Rotations.SOUTH, Rotations.WEST, Rotations.NORTH, Rotations.EAST)) {
+                int currentBitsMatched = 0;
+
+                for (SignatureColumn col : signature) {
+                    int worldX = 0
+                    int worldZ = 0;
+
+                    switch (rot) {
+                        case SOUTH -> {
+                           worldX = minX + col.x;
+                           worldZ = minZ + col.z;
+                        }
+                        case WEST  -> {
+                           worldX = maxX - col.z;
+                           worldZ = minZ + col.x;
+                        }
+                        case NORTH -> {
+                           worldX = maxX - col.x;
+                           worldZ = maxZ - col.z;
+                        }
+                        case EAST  -> {
+                           worldX = minX + col.z;
+                           worldZ = maxZ - col.x;
+                        }
+                        default -> {}
+                    }
+
+                    long worldMask = 0;
+                    for (int i = 0; i < 32; i++) {
+                        BlockPos p = new BlockPos(worldX, 69 + i, worldZ);
+                        Block block = client.world.getBlockState(p).getBlock();
+                        if (block != Blocks.AIR) {
+                            worldMask |= (1L << i);
                         }
                     }
-                    if (neighborsValid) {
-                        room.clayPos = checkPos;
-                        room.rotation = rot;
-                        if (room.rotation != Rotations.NONE && (room.data.name().equalsIgnoreCase("Slime-5") || room.data.name().equalsIgnoreCase("Sewer-7"))) {
-                            Rotations newRot = room.rotation;
 
-                            switch (room.rotation) {
-                                case NORTH -> newRot = Rotations.SOUTH;
-                                case SOUTH -> newRot = Rotations.NORTH;
-                                case EAST  -> newRot = Rotations.WEST;
-                                case WEST  -> newRot = Rotations.EAST;
-                            }
+                    int bitMatches = Integer.bitCount(~((int)worldMask ^ (int)col.mask));
+                    currentBitsMatched += bitMatches;
+                }
 
-                            room.rotation = newRot;
-                            room.clayPos = calculateCorner(room.roomComponents, newRot);
-
-                            System.out.println("[SecretRoutes] Manually flipped " + room.data.name() + " to " + newRot);
-                        }
-                        return;
-                    }
+                if (currentBitsMatched > maxBitsMatched) {
+                    maxBitsMatched = currentBitsMatched;
+                    bestRot = rot;
                 }
             }
+
+            room.rotation = bestRot;
+            room.clayPos = calculateCorner(room.roomComponents, bestRot);
         }
-        room.rotation = Rotations.NONE;
     }
 
     // Calculates corner position.
