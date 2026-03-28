@@ -236,7 +236,7 @@ public class DungeonScanner {
                 int currentBitsMatched = 0;
 
                 for (SignatureColumn col : signature) {
-                    int worldX = 0
+                    int worldX = 0;
                     int worldZ = 0;
 
                     switch (rot) {
