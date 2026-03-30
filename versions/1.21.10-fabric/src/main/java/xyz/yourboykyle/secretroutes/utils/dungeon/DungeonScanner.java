@@ -9,6 +9,8 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
 import net.minecraft.client.MinecraftClient;
+import net.minecraft.resource.Resource;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import org.joml.Vector2i;
@@ -18,8 +20,11 @@ import xyz.yourboykyle.secretroutes.utils.LocationUtils;
 import xyz.yourboykyle.secretroutes.utils.Room;
 import xyz.yourboykyle.secretroutes.utils.LogUtils;
 
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Type;
 import java.util.*;
 
 /*BSD 3-Clause License
