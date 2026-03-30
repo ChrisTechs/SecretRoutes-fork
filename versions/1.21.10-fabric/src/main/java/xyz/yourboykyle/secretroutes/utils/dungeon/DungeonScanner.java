@@ -223,7 +223,7 @@ public class DungeonScanner {
 
         // Match DRM skeleton file signatures to the current room.
         List<SignatureColumn> signature = SIGNATURE_DATA.get(room.data.name().toLowerCase(Locale.ROOT));
-        if (client.world != null) {
+        if (client.world != null && signature != null) {
 
             int minCenterX = room.roomComponents.stream().mapToInt(RoomComponent::x).min().orElse(0);
             int maxCenterX = room.roomComponents.stream().mapToInt(RoomComponent::x).max().orElse(0);
